@@ -45,6 +45,49 @@ def jump(inst_ptr, program, direction):
     return inst_ptr
 
 
+def error(err):
+    """Print error message and exit"""
+    print(err)
+    exit()
+
+
+def move_ptr(command, data_ptr):
+    """move the data pointer based on the command"""
+    if command == '<':
+        data_ptr -= 1
+        if data_ptr < 0:
+            print("Error: attempting to go before data start")
+            quit()
+    elif command == '>':
+        data_ptr += 1
+    else:
+        error("Error while interpreting program")
+    return data_ptr
+
+
+def mod_data(command, data):
+    """Modify the data based on the command"""
+    if command == '+':
+        data += 1
+    elif command == '-':
+        data -= 1
+    else:
+        error("Error while modifying data")
+    return data
+
+
+def in_out(command, data):
+    """Perform I/O operation based on command"""
+    if command == '.':
+        print(chr(data), end='')
+    elif command == ',':
+        char = sys.stdin.read(1)
+        data = ord(char)
+    else:
+        error('Error during I/O operation')
+    return data
+
+
 def interpret(program):
     """Interpret the program"""
     inst_ptr = 0
@@ -53,30 +96,17 @@ def interpret(program):
 
     while inst_ptr < len(program):
         command = program[inst_ptr]
-        if command == '<':
-            # Decrement the data pointer
-            data_ptr -= 1
-            if data_ptr < 0:
-                print("Error: attempting to go before data start")
-                quit()
-        elif command == '>':
-            # Increment the data pointer
-            data_ptr += 1
+        if command in '<>':
+            # move data pointer
+            data_ptr = move_ptr(command, data_ptr)
             if data_ptr == len(data):
                 data += [0]
-        elif command == '+':
-            # Increment the data at the data pointer
-            data[data_ptr] += 1
-        elif command == '-':
-            # Decrement the data at the data pointer
-            data[data_ptr] -= 1
-        elif command == '.':
-            # Print the data at the data pointer as a character
-            print(chr(data[data_ptr]), end='')
-        elif command == ',':
-            # Read in one character from stdin to the data pointer location
-            char = sys.stdin.read(1)
-            data[data_ptr] = ord(char)
+        elif command in '+-':
+            # change data at data pointer
+            data[data_ptr] = mod_data(command, data[data_ptr])
+        elif command in '.,':
+            # Do some I/O
+            in_out(command, data[data_ptr])
         elif command == '[':
             # Start of while loop
             if data[data_ptr] == 0:
@@ -86,17 +116,16 @@ def interpret(program):
             if data[data_ptr] != 0:
                 inst_ptr = jump(inst_ptr, program, -1)
         else:
-            print("Error while interpreting program.")
-            exit()
+            error("Error while interpreting program.")
         inst_ptr += 1
 
 
 def main():
     """Main function"""
     arglen = len(sys.argv)
-    if arglen == 1: #Start interactive mode
+    if arglen == 1:  # Start interactive mode
         mode = 'i'
-    elif arglen == 2: #Start file mode
+    elif arglen == 2:  # Start file mode
         mode = 'f'
     else:
         print("Number of arguments not understood")
